@@ -1,0 +1,163 @@
+/* Import font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+body,
+button {
+  font-family: "Poppins", sans-serif;
+}
+
+/* Root variables */
+:root {
+  --offcanvas-width: 270px;
+  --topNavbarHeight: 56px;
+  --highlight-color: #DDB02C; /* Company highlight color */
+  --sidebar-bg-color: #343a40; /* Sidebar background */
+  --sidebar-text-color: #adb5bd; /* Sidebar text color (light gray) */
+  --sidebar-hover-color: #ffffff; /* Slightly brighter for hover */
+  --active-bg-color: var(--highlight-color); /* Active menu background */
+  --active-text-color: #fff; /* Active menu text color */
+}
+
+/* Sidebar styling */
+.sidebar-nav {
+  width: var(--offcanvas-width);
+  background-color: var(--sidebar-bg-color);
+  color: var(--sidebar-text-color);
+}
+
+/* Sidebar link styling */
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  color: var(--sidebar-text-color);
+  transition: color 0.3s, background-color 0.3s;
+}
+
+/* Hover effect */
+.sidebar-link:hover {
+  color: var(--sidebar-hover-color); /* Brighten slightly on hover */
+}
+
+/* Active menu item styling */
+.sidebar-link.active {
+  background-color: var(--active-bg-color); /* Highlight background for active */
+  color: var(--active-text-color); /* Ensure text is visible on highlight */
+}
+
+/* Sidebar icons */
+.sidebar-link .right-icon {
+  display: inline-flex;
+}
+
+.sidebar-link[aria-expanded="true"] .right-icon {
+  transform: rotate(180deg);
+}
+
+/* Desktop-specific styles */
+@media (min-width: 992px) {
+  body {
+    overflow: auto !important;
+  }
+
+  main {
+    margin-left: var(--offcanvas-width);
+  }
+
+  /* Remove backdrop */
+  .offcanvas-backdrop::before {
+    display: none;
+  }
+
+  /* Sidebar fixed position */
+  .sidebar-nav {
+    transform: none;
+    visibility: visible !important;
+    height: calc(100% - var(--topNavbarHeight));
+    top: var(--topNavbarHeight);
+  }
+}
+
+/* Divider */
+.dropdown-divider {
+  background-color: rgba(255, 255, 255, 0.1); /* Subtle divider */
+}
+.sidebar-link {
+    color: #ffffff; /* Change to white for better contrast */
+  }
+
+  .sidebar-link:hover {
+    color: #f8f9fa; /* Slightly brighter white on hover */
+  }
+
+  .sidebar-link.active {
+    background-color: #DDB02C; /* Company highlight color */
+    color: #ffffff; /* Keep the text readable on the highlight */
+  }
+
+  .navbar-dark .navbar-nav .nav-link {
+    color: #ffffff; /* Ensure all links in dark navbar are white */
+  }
+
+
+
+
+
+/* Unique class for table header to prevent CSS conflicts */
+.table-header {
+    background-color: #f8f9fa;
+    text-align: left;
+    font-weight: bold;
+}
+
+/* Remove default link style for sortable headers */
+.sortable-header {
+    color: #333;
+    text-decoration: none;
+    position: relative;
+    font-weight: bold;
+    padding-right: 20px;
+}
+
+/* Hover effect for better user interaction */
+.sortable-header:hover {
+    color: #007bff;
+    text-decoration: underline;
+}
+
+/* Add a small arrow to indicate sorting direction */
+.sortable-header::after {
+    content: '\25B2'; /* Up arrow */
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8rem;
+    color: #007bff;
+}
+
+/* Adjust arrow direction based on sorting */
+.sortable-header[data-direction="desc"]::after {
+    content: '\25BC'; /* Down arrow */
+}
+
+/* Table row hover effect */
+.table-striped tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+
+
+/* CSS untuk mengatur ukuran tombol pagination */
+.pagination .page-link {
+    padding: 0.25rem 0.5rem; /* Ukuran padding lebih kecil */
+    font-size: 0.875rem; /* Ukuran font yang lebih kecil */
+}
+
+.pagination .page-item {
+    margin: 0 0.1rem; /* Mengatur margin antar tombol */
+}
+
+.pagination {
+    justify-content: center; /* Mengatur posisi pagination di tengah */
+}
