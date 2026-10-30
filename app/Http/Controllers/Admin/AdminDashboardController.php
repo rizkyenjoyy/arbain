@@ -16,46 +16,53 @@ class AdminDashboardController extends Controller
     public function index(Request $request)
     {
         // Dapatkan tahun yang dipilih dari request atau tahun saat ini sebagai default
-        $selectedYear = $request->input('year', Carbon::now()->year);
+        $selectedYear = (int) $request->input('year', Carbon::now()->year);
 
-        // Total Jamaah
+        // --- 1. METRIK FINANSIAL ---
+        $totalRevenue = Payment::where('status', 'approved')->sum('amount');
+        $thisMonthRevenue = Payment::where('status', 'approved')
+            ->whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year)
+            ->sum('amount');
+        $paidCommissions = Commission::sum('amount');
+
+        // Total Piutang / Kekurangan pembayaran dari jamaah approved
+        $totalReceivables = Jamaah::where('status', 'approved')
+            ->with('package')
+            ->get()
+            ->sum(function ($jamaah) {
+                $price = $jamaah->package ? $jamaah->package->price : 0;
+                return max(0, $price - $jamaah->total_amount);
+            });
+
+        // --- 2. METRIK OPERASIONAL & PERSETUJUAN ---
         $totalJamaah = Jamaah::count();
-
+        $totalJamaahApproved = Jamaah::where('status', 'approved')->count();
         $totalJamaahPending = Jamaah::where('status', 'pending')->count();
-
         $totalJamaahUnpaid = Jamaah::where('total_amount', 0)->count();
-
-
-        // Total Agen (dengan role Agen)
-        $totalAgen = User::role('Agen')->count();
-
-        // Pembayaran yang sudah diterima (status 'approved')
-        $approvedPayments = Payment::where('status', 'approved')->count();
-
-        // Komisi yang sudah dibayarkan (status 'paid' di tabel commissions)
-        $paidCommissions = Commission::count();
-
-        // Pembayaran yang sedang pending (status 'pending')
-        $pendingPayments = Payment::where('status', 'pending')->count();
-
         $totalJamaahKejarLunas = Jamaah::belumLunasDiH60()->count();
 
+        $totalAgen = User::role('Agen')->count();
+        $totalAgenActive = User::role('Agen')->where('is_active', 1)->count();
+
+        $approvedPayments = Payment::where('status', 'approved')->count();
+        $pendingPayments = Payment::where('status', 'pending')->count();
+
+        $totalPackages = Package::count();
         $packagesWithFewerJamaah = Package::lessThanEqualToTwelveJamaahs()->count();
 
-
-
-        // Total transaksi per bulan berdasarkan tahun yang dipilih
-        $transactions = Payment::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as total')
-            ->groupBy('year', 'month')
-            ->whereYear('created_at', $selectedYear)  // Filter berdasarkan tahun yang dipilih
+        // --- 3. DATA GRAFIK BULANAN ---
+        $transactionsQuery = Payment::selectRaw('MONTH(created_at) as month, COUNT(*) as count, SUM(CASE WHEN status = "approved" THEN amount ELSE 0 END) as revenue')
+            ->whereYear('created_at', $selectedYear)
+            ->groupBy('month')
             ->get()
-            ->pluck('total', 'month')
-            ->toArray();
+            ->keyBy('month');
 
-        // Menambahkan nol untuk bulan yang tidak memiliki data
         $monthlyTransactions = [];
+        $monthlyRevenue = [];
         for ($i = 1; $i <= 12; $i++) {
-            $monthlyTransactions[$i] = $transactions[$i] ?? 0;
+            $monthlyTransactions[$i] = (int) ($transactionsQuery[$i]->count ?? 0);
+            $monthlyRevenue[$i] = (float) ($transactionsQuery[$i]->revenue ?? 0);
         }
 
         // Dapatkan daftar tahun yang tersedia di tabel pembayaran
@@ -65,6 +72,73 @@ class AdminDashboardController extends Controller
             ->pluck('year')
             ->toArray();
 
-        return view('dashboard.admin.index', compact('totalJamaah', 'totalAgen', 'approvedPayments', 'paidCommissions', 'monthlyTransactions', 'availableYears', 'selectedYear', 'pendingPayments', 'totalJamaahPending', 'totalJamaahUnpaid', 'totalJamaahKejarLunas', 'packagesWithFewerJamaah'));
+        if (empty($availableYears)) {
+            $availableYears = [Carbon::now()->year];
+        }
+
+        // Distribusi Metode Pembayaran
+        $paymentMethods = Payment::selectRaw('payment_method, COUNT(*) as total')
+            ->groupBy('payment_method')
+            ->pluck('total', 'payment_method')
+            ->toArray();
+
+        // Top 5 Paket Terpopuler berdasarkan jumlah jamaah
+        $topPackages = Package::withCount('jamaahs')
+            ->orderByDesc('jamaahs_count')
+            ->take(5)
+            ->get();
+
+        // --- 4. DATA DAFTAR QUICK ACTION / AKTIVITAS TERBARU ---
+        $recentPendingPayments = Payment::where('status', 'pending')
+            ->with(['jamaah.referensi', 'jamaah.package'])
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $recentPendingJamaah = Jamaah::where('status', 'pending')
+            ->with(['referensi', 'package'])
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $upcomingPackages = Package::where('departure_date', '>=', Carbon::today())
+            ->withCount('jamaahs')
+            ->orderBy('departure_date', 'asc')
+            ->take(4)
+            ->get();
+
+        $topAgents = User::role('Agen')
+            ->withCount('jamaahs')
+            ->orderByDesc('jamaahs_count')
+            ->take(5)
+            ->get();
+
+        return view('dashboard.admin.index', compact(
+            'totalJamaah',
+            'totalJamaahApproved',
+            'totalJamaahPending',
+            'totalJamaahUnpaid',
+            'totalJamaahKejarLunas',
+            'totalAgen',
+            'totalAgenActive',
+            'approvedPayments',
+            'pendingPayments',
+            'paidCommissions',
+            'totalRevenue',
+            'thisMonthRevenue',
+            'totalReceivables',
+            'totalPackages',
+            'packagesWithFewerJamaah',
+            'monthlyTransactions',
+            'monthlyRevenue',
+            'availableYears',
+            'selectedYear',
+            'paymentMethods',
+            'topPackages',
+            'recentPendingPayments',
+            'recentPendingJamaah',
+            'upcomingPackages',
+            'topAgents'
+        ));
     }
 }

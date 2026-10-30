@@ -11,20 +11,33 @@ class AdminUserSeeder extends Seeder
 {
     public function run()
     {
+        // Pastikan role admin dan agen ada
+        $roleAdmin = Role::firstOrCreate(['name' => 'Admin']);
+        $roleAgen = Role::firstOrCreate(['name' => 'Agen']);
+
         // Buat user admin
         $admin = User::firstOrCreate([
-            'username' => 'adminuser', // username login
+            'username' => 'adminuser',
+        ], [
             'name' => 'Admin User',
             'email' => 'admin@example.com',
-            'phone' => '123456789',
-            'password' => Hash::make('123456789'), // Password di-hash
+            'phone' => '081234567890',
+            'password' => Hash::make('123456789'),
+            'is_active' => true,
         ]);
-
-        // Pastikan role admin ada
-        $role = Role::firstOrCreate(['name' => 'Admin']);
-
-        // Tambahkan role admin ke user
         $admin->assignRole('Admin');
+
+        // Buat user agen
+        $agen = User::firstOrCreate([
+            'username' => 'agenuser',
+        ], [
+            'name' => 'Agen User',
+            'email' => 'agen@example.com',
+            'phone' => '081234567891',
+            'password' => Hash::make('123456789'),
+            'is_active' => true,
+        ]);
+        $agen->assignRole('Agen');
     }
 }
 

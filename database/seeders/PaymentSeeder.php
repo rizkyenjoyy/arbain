@@ -10,22 +10,24 @@ class PaymentSeeder extends Seeder
 {
     public function run()
     {
-        // Ambil jamaah yang statusnya approved dan belum lunas
-        $jamaahs = Jamaah::where('status', 'approved')->get();
+        // Ambil jamaah yang statusnya approved
+        $jamaahs = Jamaah::where('status', 'approved')->with('package')->get();
 
         foreach ($jamaahs as $jamaah) {
-            // Membuat beberapa pembayaran untuk tiap jamaah
+            $halfPrice = $jamaah->package ? ($jamaah->package->price / 2) : 5000000;
+
+            // Membuat 2 pembayaran disetujui sehingga lunas
             Payment::create([
                 'jamaah_id' => $jamaah->id,
-                'amount' => rand(10000, 100000), // Jumlah random sebagai contoh
+                'amount' => $halfPrice,
                 'payment_method' => 'transfer',
                 'payment_proof' => null,
-                'status' => 'pending',
+                'status' => 'approved',
             ]);
 
             Payment::create([
                 'jamaah_id' => $jamaah->id,
-                'amount' => rand(10000, 100000), // Jumlah random sebagai contoh
+                'amount' => $halfPrice,
                 'payment_method' => 'cash',
                 'payment_proof' => null,
                 'status' => 'approved',
